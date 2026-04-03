@@ -2,7 +2,7 @@
 title: Nexus
 emoji: 🧑‍💻
 colorFrom: grey
-colorTo: grey
+colorTo: indigo
 sdk: docker
 pinned: false
 ---
