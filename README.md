@@ -1,8 +1,8 @@
 ---
 title: Nexus
 emoji: 🧑‍💻
-colorFrom: gray
-colorTo: black
+colorFrom: indigo
+colorTo: grey
 sdk: docker
 pinned: false
 ---
