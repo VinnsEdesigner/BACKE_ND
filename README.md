@@ -1,13 +1,13 @@
 ---
 title: Nexus
-emoji: ⚡
+emoji: 🧑‍💻
 colorFrom: gray
 colorTo: black
 sdk: docker
 pinned: false
 ---
 
-# ⚡ Nexus
+# 🧞 Nexus
 > Layer ==== Vinns AI Dev Agent system.
 
 Built on Express.js.  
