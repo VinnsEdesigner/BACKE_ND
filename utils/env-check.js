@@ -3,6 +3,7 @@
 const REQUIRED_VARS = [
   // Auth
   'JWT_SECRET',
+  'ACCESS_PIN',
 
   // AI Providers
   'GROQ_API_KEY',
@@ -29,6 +30,7 @@ const REQUIRED_VARS = [
 
   // HF Spaces
   'HF_SPACE_URL',
+  'NODE_ENV',
 ];
 
 function checkEnv() {
