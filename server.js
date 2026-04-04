@@ -62,9 +62,11 @@ app.get('/api/sync',           sync);
 // Phase 3: GitHub
 // app.use('/api/github', githubRouter);
 
-app.post('/api/scraper-agent', scraperAgent);
-app.post('/api/lite-agent',    liteAgent);
-app.get('/api/sync',           sync);
+// Phase 4: AI agent core
+// app.post('/api/agent', agent);
+// app.post('/api/search', search);
+// app.use('/api/session', sessionRouter);
+
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
