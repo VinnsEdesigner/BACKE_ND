@@ -56,9 +56,9 @@ app.get('/api/broadcast', broadcastSubscribe);
 app.use('/api', rateLimit);
 
 // ── Placeholder routes (filled in subsequent phases) ──────────────────────────
-const scraperAgent  = require('./api/scraper-agent');
-const { liteAgent } = require('./api/lite-agent');
-const sync          = require('./api/sync');
+app.post('/api/scraper-agent', scraperAgent);
+app.post('/api/lite-agent',    liteAgent);
+app.get('/api/sync',           sync);
 
 // Phase 3: GitHub
 // app.use('/api/github', githubRouter);
