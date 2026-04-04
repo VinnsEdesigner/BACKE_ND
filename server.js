@@ -21,7 +21,10 @@ const health      = require('./api/health');
 const warmup      = require('./api/warmup');
 const testModels  = require('./api/test-models');
 const { subscribe: broadcastSubscribe } = require('./api/broadcast');
-
+const scraperAgent  = require('./api/scraper-agent');
+const { liteAgent } = require('./api/lite-agent');
+const sync          = require('./api/sync');
+ 
 // ── App setup ──────────────────────────────────────────────────────────────────
 const app = express();
 const PORT = process.env.PORT || 7860; // HF Spaces uses 7860
