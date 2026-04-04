@@ -1,23 +1,20 @@
 'use strict';
 
 const { query } = require('../lib/supabase');
-const logger = require('../lib/logger');
+const logger    = require('../lib/logger');
 const { HTTP, TABLES } = require('../utils/constants');
 
 /**
  * GET /api/sync
  *
- * Bookmarklet polls this every 15s.
- * Returns latest settings so bookmarklet can apply diffs immediately.
- * Also returns auth status confirmation so HUD can show correct state.
- *
- * No body required — auth token in header is enough to identify user.
+ * Bookmarklet polls this every 15s (SCRAPER.POLL_INTERVAL_MS).
+ * Returns latest settings so bookmarklet applies diffs immediately.
+ * Auth token in header identifies user — no body needed.
  */
 async function sync(req, res) {
   const { userId } = req.user;
 
   try {
-    // Fetch latest settings row for this user
     const rows = await query(TABLES.SETTINGS, 'select', {
       filters: { user_id: userId },
       limit:   1,
@@ -29,17 +26,17 @@ async function sync(req, res) {
       ok:        true,
       timestamp: new Date().toISOString(),
       userId,
+      // Only return columns that exist in schema
       settings: settings
         ? {
-            prompt_injection:  settings.prompt_injection  ?? true,
-            auto_sync:         settings.auto_sync         ?? true,
-            snippet_limit:     settings.snippet_limit      ?? 20,
-            max_snippet_length:settings.max_snippet_length ?? 2000,
-            autonomy_level:    settings.autonomy_level     ?? 1,
-            confirmation_prompts: settings.confirmation_prompts ?? true,
-            reasoning_log:     settings.reasoning_log     ?? false,
+            prompt_injection:     settings.prompt_injection      ?? true,
+            auto_sync:            settings.auto_sync             ?? true,
+            snippet_limit:        settings.snippet_limit          ?? 20,
+            autonomy_level:       settings.autonomy_level         ?? 1,
+            confirmation_prompts: settings.confirmation_prompts   ?? true,
+            reasoning_log:        settings.reasoning_log          ?? false,
           }
-        : null, // null = no settings saved yet, bookmarklet uses its own defaults
+        : null,
     });
   } catch (err) {
     logger.error('sync', 'Failed to fetch settings', err);

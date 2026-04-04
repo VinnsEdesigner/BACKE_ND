@@ -1,14 +1,12 @@
 'use strict';
 
-const { complete } = require('../lib/ai');
-const { search }   = require('../lib/searchRouter');
-const { query }    = require('../lib/supabase');
-const logger       = require('../lib/logger');
+const { complete }   = require('../lib/ai');
+const { search }     = require('../lib/searchRouter');
+const { query }      = require('../lib/supabase');
+const logger         = require('../lib/logger');
 const { HTTP, TABLES, AGENT } = require('../utils/constants');
 
-// ── SYSTEM PROMPT ──────────────────────────────────────────────────────────────
-// Stripped-down — no GitHub tools, no file ops, no complex chains.
-// Fast + cheap. Focused on what's on the page RIGHT NOW.
+// ── SYSTEM PROMPT ─────────────────────────────────────────────────────────────
 
 const LITE_SYSTEM_PROMPT = `You are a focused web research assistant injected into the user's browser.
 You have access to the current page content and can search the web.
@@ -17,26 +15,24 @@ Do not perform file operations, GitHub actions, or multi-step plans.
 If a task requires those, say: "This needs the full agent — send from Dashboard."
 Always respond in plain text. No markdown headers. Short paragraphs.`;
 
-// ── INTENT CLASSIFIER (cheap — decides if search is needed) ───────────────────
+// ── SEARCH INTENT HEURISTIC ───────────────────────────────────────────────────
 
 async function needsSearch(userMessage) {
-  // Heuristic-first — avoids a full AI call for obvious cases
-  const searchKeywords = [
+  const keywords = [
     'search', 'find', 'look up', 'what is', 'who is', 'latest', 'recent',
     'news', 'docs', 'documentation', 'how to', 'tutorial', 'example',
     'compare', 'vs', 'difference between', 'price', 'release',
   ];
   const lower = userMessage.toLowerCase();
-  return searchKeywords.some((kw) => lower.includes(kw));
+  return keywords.some((kw) => lower.includes(kw));
 }
 
-// ── TOOL: WEB SEARCH ──────────────────────────────────────────────────────────
+// ── SEARCH RUNNER ─────────────────────────────────────────────────────────────
 
-async function runSearch(query_str) {
+async function runSearch(queryStr) {
   try {
-    const { results, provider } = await search(query_str, { maxResults: 4 });
+    const { results, provider } = await search(queryStr, { maxResults: 4 });
     logger.debug('lite-agent', `Search via ${provider}: ${results.length} results`);
-    // Format results into a compact string for context injection
     return results
       .map((r, i) => `[${i + 1}] ${r.title}\n${r.url}\n${r.snippet}`)
       .join('\n\n');
@@ -46,41 +42,37 @@ async function runSearch(query_str) {
   }
 }
 
-// ── CORE LITE AGENT RUNNER ────────────────────────────────────────────────────
-// Exported so scraper-agent.js can call it directly (no HTTP round-trip)
+// ── CORE RUNNER ───────────────────────────────────────────────────────────────
+// Exported so scraper-agent.js can call directly (no HTTP round-trip)
 
 async function runLiteAgent({ userId, message, pageContext, snippets = [] }) {
   if (!message) throw new Error('message required');
 
-  // Build context block from page DOM
+  // Page DOM context block
   const pageBlock = pageContext
     ? `\n\n[PAGE CONTEXT]\nURL: ${pageContext.url || 'unknown'}\nTitle: ${pageContext.title || 'unknown'}\nContent:\n${(pageContext.content || '').slice(0, 3000)}`
     : '';
 
-  // Build snippets block (staged selections)
+  // Staged snippets block
   const snippetBlock = snippets.length > 0
     ? `\n\n[STAGED SNIPPETS]\n${snippets.map((s, i) => `#${i + 1} [${s.type}]: ${s.text}`).join('\n')}`
     : '';
 
-  // Decide if we need a web search
+  // Optional web search
   let searchBlock = '';
   if (await needsSearch(message)) {
-    logger.debug('lite-agent', 'Search triggered for message', { message: message.slice(0, 60) });
-    const searchResults = await runSearch(message);
-    if (searchResults) {
-      searchBlock = `\n\n[WEB SEARCH RESULTS]\n${searchResults}`;
-    }
+    logger.debug('lite-agent', 'Search triggered', { msg: message.slice(0, 60) });
+    const results = await runSearch(message);
+    if (results) searchBlock = `\n\n[WEB SEARCH RESULTS]\n${results}`;
   }
 
   const userContent = `${message}${pageBlock}${snippetBlock}${searchBlock}`;
+  const messages    = [{ role: 'user', content: userContent }];
 
-  const messages = [{ role: 'user', content: userContent }];
-
-  // Run through AI waterfall
   const result = await complete({
     messages,
     systemPrompt: LITE_SYSTEM_PROMPT,
-    maxTokens:    1000, // lite = cheap, keep short
+    maxTokens:    1000,
   });
 
   logger.info('lite-agent', 'Completed', {
@@ -98,11 +90,9 @@ async function runLiteAgent({ userId, message, pageContext, snippets = [] }) {
 }
 
 // ── HTTP HANDLER ──────────────────────────────────────────────────────────────
-// POST /api/lite-agent
-// Body: { message, pageContext?, snippets? }
 
 async function liteAgent(req, res) {
-  const { userId } = req.user;
+  const { userId }                       = req.user;
   const { message, pageContext, snippets } = req.body;
 
   if (!message || typeof message !== 'string' || !message.trim()) {
@@ -115,25 +105,30 @@ async function liteAgent(req, res) {
   try {
     const result = await runLiteAgent({
       userId,
-      message: message.trim(),
+      message:     message.trim(),
       pageContext,
-      snippets: snippets || [],
+      snippets:    snippets || [],
     });
 
-    // Persist conversation to Supabase (non-fatal if fails)
+    // Persist to conversations — only columns that exist in schema
     try {
       await query(TABLES.CONVERSATIONS, 'insert', {
         data: {
-          user_id:     userId,
-          source:      'lite_agent',
-          role:        'assistant',
-          content:     result.reply,
-          model_used:  result.model,
-          tokens_used: result.tokens_used,
-          created_at:  new Date().toISOString(),
+          user_id:    userId,
+          role:       'assistant',
+          content:    result.reply,
+          card_type:  'text',
+          metadata:   {
+            model:       result.model,
+            tokens_used: result.tokens_used,
+            source:      'lite_agent',
+            searched:    result.searched,
+          },
+          created_at: new Date().toISOString(),
         },
       });
     } catch (dbErr) {
+      // Non-fatal — response already ready
       logger.warn('lite-agent', 'Failed to persist conversation', dbErr);
     }
 
