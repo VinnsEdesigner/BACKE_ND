@@ -17,8 +17,9 @@ const rateLimit       = require('./middleware/rate-limit');
 
 // ── Route handlers ─────────────────────────────────────────────────────────────
 const { login, refresh, verify } = require('./api/auth');
-const health    = require('./api/health');
-const warmup    = require('./api/warmup');
+const health      = require('./api/health');
+const warmup      = require('./api/warmup');
+const testModels  = require('./api/test-models');
 const { subscribe: broadcastSubscribe } = require('./api/broadcast');
 
 // ── App setup ──────────────────────────────────────────────────────────────────
@@ -37,9 +38,10 @@ app.use((req, res, next) => {
 });
 
 // ── Public routes (no auth required) ──────────────────────────────────────────
-app.get('/api/health',  health);
-app.get('/api/warmup',  warmup);
-app.post('/api/auth/login', login);
+app.get('/api/health',       health);
+app.get('/api/warmup',       warmup);
+app.get('/api/test-models',  testModels);  // ← test all 7 AI models
+app.post('/api/auth/login',  login);
 
 // ── Protected routes (JWT required) ───────────────────────────────────────────
 app.use('/api', verifyToken);
