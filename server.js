@@ -37,12 +37,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Public routes (no auth required) ──────────────────────────────────────────
-app.get('/api/health',       health);
-app.get('/api/warmup',       warmup);
-app.get('/api/test-models',  testModels);  // ← test all 7 AI models
-app.post('/api/auth/login',  login);
-
+// Public routes (no auth required)
+app.get('/api/health',  health);
+app.head('/api/warmup', (req, res) => res.sendStatus(200));  // ← add this
+app.get('/api/warmup',  warmup);
+app.get('/api/test-models', testModels);
 // ── Protected routes (JWT required) ───────────────────────────────────────────
 app.use('/api', verifyToken);
 
