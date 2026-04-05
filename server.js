@@ -82,6 +82,12 @@ app.patch('/api/active-model', switchModel);
 app.get('/api/agent/status',   agentStatus);
 app.post('/api/search',        searchHandler);
 app.get('/api/search/status',  searchStatus);
+const path = require('path');
+const path = require('path');
+app.get('/scraper.js', (req, res) => {
+    res.set('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'scraper.js'));
+});
 
 // ── 404 ────────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
