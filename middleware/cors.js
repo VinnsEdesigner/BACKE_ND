@@ -3,7 +3,7 @@
 const cors = require('cors');
 
 const ALLOWED_ORIGINS = [
-  'https://vinnsEdesigner.github.io',  // dashboard
+  'https://vinnsedesigner.github.io',  // dashboard
   'http://localhost:3000',              // local dev
   'http://localhost:5500',              // live server dev
 ];
