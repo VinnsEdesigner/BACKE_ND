@@ -37,6 +37,8 @@ const {
   deleteSession,
 }                                                 = require('./api/session');
 const { githubHandler, rollbackHandler, treeHandler } = require('./api/github');
+const { agent, switchModel, agentStatus } = require('./api/agent');
+const { search: searchHandler, searchStatus } = require('./api/search');
 
 // ── App setup ──────────────────────────────────────────────────────────────────
 const app  = express();
