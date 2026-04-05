@@ -5,12 +5,11 @@ const logger = require('../lib/logger');
 const { HTTP, JWT } = require('../utils/constants');
 
 function verifyToken(req, res, next) {
-  // Skip auth for login route
   if (req.path === '/auth/login') return next();
-  const authHeader = req.headers['authorization'];
-}
 
-if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const authHeader = req.headers['authorization'];
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     logger.warn('verify-token', 'Missing or malformed Authorization header', {
       path: req.path,
       ip: req.ip,
@@ -21,14 +20,13 @@ if (!authHeader || !authHeader.startsWith('Bearer ')) {
     });
   }
 
-  const token = authHeader.slice(7); // strip "Bearer "
+  const token = authHeader.slice(7);
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET, {
       algorithms: [JWT.ALGORITHM],
     });
-
-    req.user = decoded; // { userId, iat, exp }
+    req.user = decoded;
     next();
   } catch (err) {
     const isExpired = err.name === 'TokenExpiredError';
@@ -36,7 +34,6 @@ if (!authHeader || !authHeader.startsWith('Bearer ')) {
       path: req.path,
       error: err.message,
     });
-
     return res.status(HTTP.UNAUTHORIZED).json({
       error: isExpired ? 'token_expired' : 'invalid_token',
       message: isExpired ? 'Token expired — please log in again' : 'Invalid token',
