@@ -5,9 +5,12 @@ const logger = require('../lib/logger');
 const { HTTP, JWT } = require('../utils/constants');
 
 function verifyToken(req, res, next) {
+  // Skip auth for login route
+  if (req.path === '/auth/login') return next();
   const authHeader = req.headers['authorization'];
+}
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+if (!authHeader || !authHeader.startsWith('Bearer ')) {
     logger.warn('verify-token', 'Missing or malformed Authorization header', {
       path: req.path,
       ip: req.ip,
