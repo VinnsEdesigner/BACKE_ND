@@ -92,8 +92,11 @@ app.post('/api/github/rollback', rollbackHandler);
 app.get('/api/github/tree',      treeHandler);
 
 // ── Phase 4 placeholder — AI Agent core ───────────────────────────────────────
-// app.post('/api/agent',  agent);
-// app.post('/api/search', search);
+app.post('/api/agent',         agent);
+app.patch('/api/active-model', switchModel);
+app.get('/api/agent/status',   agentStatus);
+app.post('/api/search',        searchHandler);
+app.get('/api/search/status',  searchStatus);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
