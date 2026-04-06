@@ -50,6 +50,20 @@ app.get('/api/warmup',      warmup);
 app.get('/api/test-models', testModels);
 app.post('/api/auth/login', login);
 
+// ── Scraper bundle — served publicly so bookmarklet loader can fetch it ────────
+// GET /scraper.js → serves build/scraper.js with CORS open (any page needs it)
+// Cache-Control: no-cache so every load gets the latest build from HF
+app.get('/scraper.js', (req, res) => {
+  const filePath = require('path').join(__dirname, 'build', 'scraper.js');
+  if (!require('fs').existsSync(filePath)) {
+    return res.status(404).send('// scraper.js not built yet');
+  }
+  res.setHeader('Content-Type',  'application/javascript');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.sendFile(filePath);
+});
+
 // ── Protected ──────────────────────────────────────────────────────────────────
 app.use('/api', verifyToken);
 
