@@ -27,9 +27,11 @@ function verifyToken(req, res, next) {
   // Remove this block before going live 🔐
   if (DEV_TOKEN && token === DEV_TOKEN) {
     logger.warn('verify-token', 'DEV_TOKEN bypass used', { path: req.path });
-    req.user = { id: 'dev', email: 'dev@nexus.local', role: 'dev' };
-    return next();
-  }
+    req.user = { 
+  id: '00000000-0000-0000-0000-000000000000', // valid UUID for dev
+  email: 'dev@nexus.local', 
+  role: 'dev' 
+};
   // ─────────────────────────────────────────────────────────────────────────
 
   try {
