@@ -1,4 +1,5 @@
 'use strict';
+
 const jwt    = require('jsonwebtoken');
 const logger = require('../lib/logger');
 const { HTTP, JWT } = require('../utils/constants');
@@ -23,20 +24,21 @@ function verifyToken(req, res, next) {
   const token = authHeader.slice(7);
 
   // ── DEV BYPASS ───────────────────────────────────────────────────────────
-  // Only active if DEV_TOKEN env var is set on HF Space
-  // Remove this block before going live 🔐
+  // Only active if DEV_TOKEN env var is set on HF Space.
+  // Uses userId (not id) — matches what every route destructures.
+  // Remove DEV_TOKEN from HF env vars before going live 🔐
   if (DEV_TOKEN && token === DEV_TOKEN) {
     logger.warn('verify-token', 'DEV_TOKEN bypass used', { path: req.path });
-    req.user = { id: '00000000-0000-0000-0000-000000000000', email: 'dev@nexus.local', role: 'dev' };
+    req.user = { userId: process.env.GITHUB_USERNAME || 'VinnsEdesigner' };
     return next();
-                                                          }
-   // ─────────────────────────────────────────────────────────────────────────
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET, {
       algorithms: [JWT.ALGORITHM],
     });
-    req.user = decoded;
+    req.user = decoded; // JWT payload has { userId, iat, exp }
     next();
   } catch (err) {
     const isExpired = err.name === 'TokenExpiredError';
