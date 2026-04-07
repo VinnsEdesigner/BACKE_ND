@@ -31,7 +31,9 @@ function verifyToken(req, res, next) {
   id: '00000000-0000-0000-0000-000000000000', // valid UUID for dev
   email: 'dev@nexus.local', 
   role: 'dev' 
-};
+    });
+  }
+  
   // ─────────────────────────────────────────────────────────────────────────
 
   try {
