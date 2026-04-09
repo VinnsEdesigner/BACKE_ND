@@ -6,6 +6,43 @@ const { query }      = require('../lib/supabase');
 const logger         = require('../lib/logger');
 const { HTTP, TABLES, AGENT } = require('../utils/constants');
 
+// Read-only tools lite-agent can call. Writes are NEVER allowed here.
+const LITE_ALLOWED_TOOLS = new Set([
+  'read_file', 'list_files', 'read_url', 'remember',
+]);
+
+async function runLiteTool(toolName, args, userId) {
+  if (!LITE_ALLOWED_TOOLS.has(toolName)) {
+    return { error: `${toolName} not allowed in lite-agent — use full agent` };
+  }
+  const gh = require('../lib/github');
+  const { query } = require('../lib/supabase');
+  const { TABLES } = require('../utils/constants');
+
+  if (toolName === 'read_file') {
+    return gh.readFile(args.repo, args.path, args.branch || 'main');
+  }
+  if (toolName === 'list_files') {
+    return gh.listFiles(args.repo, args.path || '', args.branch || 'main');
+  }
+  if (toolName === 'read_url') {
+    const res = await fetch(`https://r.jina.ai/${args.url}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) throw new Error(`Jina ${res.status}`);
+    const data = await res.json();
+    return data.data?.content || '';
+  }
+  if (toolName === 'remember') {
+    await query(TABLES.PERSONALITY, 'upsert', {
+      data: { user_id: userId, key: args.key, value: String(args.value),
+              updated_at: new Date().toISOString() },
+      onConflict: 'user_id,key',
+    });
+    return { saved: true };
+  }
+}
+
 // ── SYSTEM PROMPT ─────────────────────────────────────────────────────────────
 
 const LITE_SYSTEM_PROMPT = `You are a focused agent for vinns, be helpful and reply as gen-Z - have humor - use emojis whre needed. don't respond in corporate tone. you are vinns assistant buddy - he is your creator and you run in his system. your nickname is NEXY.
