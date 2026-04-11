@@ -582,11 +582,15 @@ async function agent(req, res) {
     await broadcastEmitter.trace(userId, `vision intent → Gemini/Gemma chain`).catch(() => {});
   }
 
-  // ── 12. TOOL-CALLING LOOP ──────────────────────────────────────────────────
+   // ── 12. TOOL-CALLING LOOP ──────────────────────────────────────────────────
+
+
+  ////////
+  
   const MAX_ITERATIONS = AGENT.MAX_RETRIES;
-  let   iteration      = 0;
-  let   finalReply     = '';
-  let   toolResults    = [];
+    let finalReply     = '';
+  let toolResults    = [];
+  let aiResponse     = null;   // BUG1 FIX: declare outside loop
   const reasoningTrace = [];
 
   while (iteration < MAX_ITERATIONS) {
