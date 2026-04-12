@@ -37,7 +37,10 @@ function rateLimit(req, res, next) {
 
   const userId = req.user?.userId || req.ip;
   const window = 'hour';
-  const key = `rl:${userId}:${req.path.split('/')[2]}:${window}:${Math.floor(Date.now() / 3_600_000)}`;
+  // BUG6 FIX: use full path sanitized, not just [2] segment
+  // /api/agent → 'agent', /api/agent/status → 'agent_status'
+  const routeKey = req.path.replace(/^\/api\//, '').replace(/\//g, '_');
+  const key = `rl:${userId}:${routeKey}:${window}:${Math.floor(Date.now() / 3_600_000)}`;
 
   const redis = getRedis();
 
