@@ -114,12 +114,7 @@ register('write_file', async (args, ctx) => {
 });
 
 register('delete_file', async (args, ctx) => {
-  // Shadow backup before delete (LAW 16)
-  await shadowBranch.create(ctx.userId, args.repo, args.path, 'delete').catch((err) => {
-    logger.warn('agent:delete_file', 'Shadow backup failed — proceeding anyway', {
-      error: err.message,
-    });
-  });
+  await shadowBranch.create(ctx.userId, args.repo, args.path, 'delete').catch(() => {});
   return gh.deleteFile(args.repo, args.path, args.message, args.branch || 'main');
 });
 
