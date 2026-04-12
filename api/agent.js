@@ -744,11 +744,12 @@ async function agent(req, res) {
       }
     }
 
-    // Advance task step
-    if (task) {
-      await taskState.advance(task.id).catch(() => {});
+        // Advance task step once per tool executed this iteration
+    if (task && toolCalls.length > 0) {
+      for (let t = 0; t < toolCalls.length; t++) {
+        await taskState.advance(task.id).catch(() => {});
+      }
     }
-  }
 
   // ── 13. Loop exhausted without final reply ─────────────────────────────────
   if (!finalReply) {
