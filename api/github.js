@@ -109,7 +109,10 @@ async function rollbackHandler(req, res) {
     const result = await gh.rollbackFile(repo, path, branch || GITHUB.DEFAULT_BRANCH);
 
     // Invalidate cache
-    await repoMap.invalidate(userId, repo).catch(() => {});
+      // BUG16 FIX: pass branch so we only clear the affected branch cache
+    await repoMap.invalidate(userId, repo, args.branch || GITHUB.DEFAULT_BRANCH).catch((err) => {
+      logger.warn('github:handler', 'Cache invalidation failed', err);
+    });
 
     // Log rollback in shadow_branches
     await query(TABLES.SHADOW_BRANCHES, 'insert', {
