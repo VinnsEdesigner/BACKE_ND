@@ -1,5 +1,7 @@
 FROM node:20-alpine
 
+ENV TZ=Africa/Nairobi
+
 WORKDIR /app
 
 COPY package*.json ./
