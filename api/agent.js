@@ -690,7 +690,7 @@ async function agent(req, res) {
       };
 
       const execContext = { userId, sessionId };
-      const execResult  = await runExecutor(userId, execPlan, null, execContext);
+      const execResult  = await runExecutor(userId, execPlan, execContext);
 
       if (!execResult.success) {
         const errMsg = execResult.failedStep?.error || 'Tool execution failed';
