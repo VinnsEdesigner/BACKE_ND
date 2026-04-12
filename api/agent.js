@@ -599,8 +599,7 @@ async function agent(req, res) {
     await broadcastEmitter.trace(userId, `thinking... (iteration ${iteration}/${MAX_ITERATIONS})`).catch(() => {});
 
     // ── Call AI ──────────────────────────────────────────────────────────────
-    let aiResponse;
-    try {
+        try {
       aiResponse = await complete({
         messages,
         systemPrompt,
