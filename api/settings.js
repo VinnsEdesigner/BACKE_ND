@@ -162,7 +162,8 @@ function coerce(key, value) {
   if (intKeys.includes(key)) {
     const n = parseInt(value, 10);
     if (key === 'autonomy_level') return Math.max(0, Math.min(3, n));
-    if (key === 'snippet_limit')  return Math.max(1, Math.min(20, n));
+    // BUG15 FIX: match frontend max of 100, not 20 (20 is scraper default not hard limit)
+    if (key === 'snippet_limit')  return Math.max(1, Math.min(100, n));
     return n;
   }
 
