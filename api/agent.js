@@ -577,10 +577,13 @@ async function agent(req, res) {
    // ── 12. TOOL-CALLING LOOP ──────────────────────────────────────────────────
 
 
-  ////////
-  
+  // ── 12. TOOL-CALLING LOOP ─────────────────────────────────────────────────────
+// This replaces the entire loop section in api/agent.js
+// Fixes: BUG1 (aiResponse scope), BUG2 (task advance per tool), BUG4 (execContext)
+
   const MAX_ITERATIONS = AGENT.MAX_RETRIES;
-    let finalReply     = '';
+  let iteration      = 0;
+  let finalReply     = '';
   let toolResults    = [];
   let aiResponse     = null;   // BUG1 FIX: declare outside loop
   const reasoningTrace = [];
@@ -590,8 +593,7 @@ async function agent(req, res) {
 
     await broadcastEmitter.trace(userId, `thinking... (iteration ${iteration}/${MAX_ITERATIONS})`).catch(() => {});
 
-    // ── Call AI ──────────────────────────────────────────────────────────────
-        try {
+    try {
       aiResponse = await complete({
         messages,
         systemPrompt,
@@ -604,7 +606,6 @@ async function agent(req, res) {
           event:   'all_providers_down',
           message: 'All AI providers are currently unavailable',
         }).catch(() => {});
-
         return res.status(HTTP.SERVICE_UNAVAILABLE).json({
           error:   'all_providers_down',
           message: 'All AI providers are currently unavailable. Try again shortly.',
@@ -614,7 +615,6 @@ async function agent(req, res) {
       throw err;
     }
 
-    // Track model + tokens for reasoning trace
     await setActiveModel(userId, aiResponse.model);
     reasoningTrace.push({
       iteration,
@@ -623,20 +623,16 @@ async function agent(req, res) {
       output: aiResponse.text.slice(0, 200),
     });
 
-    // ── Parse tool calls ─────────────────────────────────────────────────────
     const toolCalls = parseToolCalls(aiResponse.text);
 
-    // No tool calls → final reply
     if (toolCalls.length === 0) {
       finalReply = aiResponse.text;
       break;
     }
 
-    // ── Execute each tool call ───────────────────────────────────────────────
     for (const toolCall of toolCalls) {
       await broadcastEmitter.trace(userId, `calling tool: ${toolCall.name}`).catch(() => {});
 
-      // Confirmation gate — check if action needs approval
       let needsConfirm = false;
       try {
         needsConfirm = await shouldConfirm(userId, toolCall.name);
@@ -651,16 +647,11 @@ async function agent(req, res) {
           details:     toolCall.args,
           risk:        riskLevel(toolCall.name),
         });
-
-        if (task) {
-          await taskState.pause(task.id, `awaiting confirmation: ${toolCall.name}`).catch(() => {});
-        }
-
+        if (task) await taskState.pause(task.id, `awaiting confirmation: ${toolCall.name}`).catch(() => {});
         await persistMessage(userId, sessionId, 'assistant', JSON.stringify(card), 'confirm_card', {
-          tool:    toolCall.name,
-          taskId:  task?.id || null,
+          tool:   toolCall.name,
+          taskId: task?.id || null,
         });
-
         return res.status(HTTP.OK).json({
           reply:        null,
           confirmation: card,
@@ -672,7 +663,6 @@ async function agent(req, res) {
         });
       }
 
-      // ── Execute via executor ───────────────────────────────────────────────
       const execPlan = {
         steps: [{
           tool:        toolCall.name,
@@ -681,19 +671,17 @@ async function agent(req, res) {
         }],
       };
 
+      // BUG4 FIX: pass execContext so sessionId reaches tool handlers
       const execContext = { userId, sessionId };
       const execResult  = await runExecutor(userId, execPlan, execContext);
 
       if (!execResult.success) {
         const errMsg = execResult.failedStep?.error || 'Tool execution failed';
-
         await broadcastEmitter.warning(userId, {
           event:   'tool_failed',
           tool:    toolCall.name,
           message: errMsg,
         }).catch(() => {});
-
-        // Feed failure back to AI so it can recover
         messages.push({ role: 'assistant', content: aiResponse.text });
         messages.push({
           role:    'user',
@@ -703,7 +691,6 @@ async function agent(req, res) {
         const result = execResult.results?.[0]?.result;
         toolResults.push({ tool: toolCall.name, result });
 
-        // Special handling for write_file — explain the diff
         if (toolCall.name === 'write_file' && result) {
           try {
             const diffExplanation = await explain(
@@ -721,7 +708,6 @@ async function agent(req, res) {
           }
         }
 
-        // Feed tool result back to AI for next iteration
         const resultStr = typeof result === 'string'
           ? result.slice(0, 2000)
           : JSON.stringify(result || {}).slice(0, 2000);
@@ -731,17 +717,18 @@ async function agent(req, res) {
           role:    'user',
           content: `Tool ${toolCall.name} result:\n${resultStr}\n\nContinue with the task.`,
         });
-
         await broadcastEmitter.trace(userId, `✅ ${toolCall.name} done`).catch(() => {});
       }
     }
 
-        // Advance task step once per tool executed this iteration
+    // BUG2 FIX: advance task once per tool executed this iteration, not once per iteration
     if (task && toolCalls.length > 0) {
       for (let t = 0; t < toolCalls.length; t++) {
         await taskState.advance(task.id).catch(() => {});
       }
     }
+  }
+// END OF WHILE LOOP
 
   // ── 13. Loop exhausted without final reply ─────────────────────────────────
   if (!finalReply) {
