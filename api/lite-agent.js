@@ -142,7 +142,22 @@ async function runSearch(queryStr) {
  * @param {string|null} sessionId
  * @returns {Promise<string>}
  */
+// VALID tools in bookmarklet context — single source of truth
+const LITE_VALID_TOOLS = new Set([
+  'read_file', 'list_files', 'web_search', 'read_url',
+  'remember', 'read_logs', 'check_file_exists',
+  'analyze_image', 'fetch_to_snippets',
+]);
+
 async function executeLiteTool(toolName, args, userId, sessionId) {
+  // TOOL VALIDATION FIX: reject invented tool names before they reach the switch
+  if (!LITE_VALID_TOOLS.has(toolName)) {
+    logger.warn('lite-agent:executeLiteTool', `Invalid tool "${toolName}" — not in allowed list`);
+    return JSON.stringify({
+      error: `Tool "${toolName}" does not exist. Available tools: ${[...LITE_VALID_TOOLS].join(', ')}`,
+    });
+  }
+
   switch (toolName) {
 
     case 'read_file': {
