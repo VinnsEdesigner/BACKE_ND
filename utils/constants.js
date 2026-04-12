@@ -215,9 +215,9 @@ const TABLES = {
 const GITHUB = {
   OWNER:          'VinnsEdesigner',
   REPOS: {
-    BACKEND:   'backend',
-    DASHBOARD: 'dashboard',
-    SCRAPER:   'scraper',
+    BACKEND:   'BACKE_ND',
+    DASHBOARD: 'DASHBOARD',
+    SCRAPER:   'SCRAPER-',
   },
   SANDBOX_BRANCH: 'ai-sandbox',
   DEFAULT_BRANCH: 'main',
