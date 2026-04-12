@@ -101,12 +101,9 @@ register('read_file', (args) =>
 );
 
 register('write_file', async (args, ctx) => {
-  // Shadow backup before write (LAW 16)
-  await shadowBranch.create(ctx.userId, args.repo, args.path, 'write').catch((err) => {
-    logger.warn('agent:write_file', 'Shadow backup failed — proceeding anyway', {
-      error: err.message,
-    });
-  });
+  // BUG12 FIX: shadowBranch.create now emits SSE warning internally on failure
+  // so we just fire-and-forget here — the user will see the warning in Terminal
+  await shadowBranch.create(ctx.userId, args.repo, args.path, 'write').catch(() => {});
   return gh.writeFile(
     args.repo,
     args.path,
