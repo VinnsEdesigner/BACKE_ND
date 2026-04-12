@@ -411,13 +411,14 @@ async function runLiteAgent({
     systemPrompt = `You are Nexy, Vinns' AI engineering collaborator. Be helpful, precise, casual.`;
   }
 
-  // ── 5. Append tool calling instructions if tools available ─────────────────
+  // ── 5. Append tool calling FORMAT instructions only (names already in systemPrompt)
+  // BUG11 FIX: don't list tool names again — buildSystemPrompt already did that
   if (injectedToolNames.length > 0) {
-    systemPrompt += '\n\n[TOOL CALLING — BOOKMARKLET]\n' +
-      'You have access to read-only tools. Use them when needed.\n' +
-      'Respond with ONLY JSON to call a tool:\n' +
+    systemPrompt += '\n\n[TOOL CALLING FORMAT]\n' +
+      'To call a tool respond with ONLY valid JSON — no other text:\n' +
       '{"tool": "tool_name", "args": {...}}\n' +
-      'Max 2 tool calls per response. After tools: respond in plain text.';
+      'Only use tools from [AVAILABLE TOOLS THIS REQUEST] above.\n' +
+      'Max 2 tool calls per response. After all tools done: respond in plain text.';
   }
 
   // ── 6. Build context blocks ────────────────────────────────────────────────
