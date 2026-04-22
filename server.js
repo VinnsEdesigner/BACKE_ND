@@ -149,7 +149,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   logger.info('server', `🚀 Nexus running on port ${PORT}`, {
     env:      process.env.NODE_ENV || 'development',
-    hf_space: process.env.HF_SPACE_URL || 'not set',
+   backend_url: process.env.BACKEND_URL || 'not set',
   });
 });
 
