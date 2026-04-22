@@ -28,8 +28,8 @@ const REQUIRED_VARS = [
   'UPSTASH_REDIS_URL',
   'UPSTASH_REDIS_TOKEN',
 
-  // HF Spaces
-  'HF_SPACE_URL',
+  // Render
+  'BACKEND_URL',
   'NODE_ENV',
 ];
 
