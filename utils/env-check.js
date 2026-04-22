@@ -46,8 +46,7 @@ function checkEnv() {
     console.error('\n❌ STARTUP FAILED — Missing required environment variables:\n');
     for (const key of missing) {
       console.error(`   • ${key}`);
-    }
-    console.error('\nSet these in HF Spaces → Settings → Variables and secrets.\n');
+    }console.error('\nSet these in Render → Dashboard → Environment\n');
     process.exit(1);
   }
 
